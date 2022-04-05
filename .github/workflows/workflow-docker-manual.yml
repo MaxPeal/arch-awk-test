@@ -12,13 +12,29 @@ jobs:
     runs-on: ubuntu-latest
     steps:
 
+      - name: echo pre GITHUB_REPOSITORY
+        run: |
+          echo "GITHUB_REPOSITORY $GITHUB_REPOSITORY"
+
       - name: downcase REPO
         run: |
           echo "REPO=${GITHUB_REPOSITORY,,}" >>${GITHUB_ENV}
 
-      - name: echo REPO
+      - name: echo post REPO
         run: |
           echo "REPO $REPO"
+
+      - name: echo pre GITHUB_REPOSITORY
+        run: |
+          echo "GITHUB_REPOSITORY $GITHUB_REPOSITORY"
+
+      - name: downcase GITHUB_REPOSITORY
+        run: |
+          echo "GITHUB_REPOSITORY=${GITHUB_REPOSITORY,,}" >>${GITHUB_ENV}
+
+      - name: echo post GITHUB_REPOSITORY
+        run: |
+          echo "GITHUB_REPOSITORY $GITHUB_REPOSITORY"
 
       - name: Checkout
         uses: actions/checkout@v2
