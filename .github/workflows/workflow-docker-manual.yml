@@ -18,7 +18,7 @@ jobs:
 
       - name: echo REPO
         run: |
-          echo "REPO $REPO
+          echo "REPO $REPO"
 
       - name: Checkout
         uses: actions/checkout@v2
