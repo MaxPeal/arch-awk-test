@@ -11,6 +11,15 @@ jobs:
   gcr-dockerhub-build-publish:
     runs-on: ubuntu-latest
     steps:
+
+      - name: downcase REPO
+        run: |
+          echo "REPO=${GITHUB_REPOSITORY,,}" >>${GITHUB_ENV}
+
+      - name: echo REPO
+        run: |
+          echo "REPO $REPO
+
       - name: Checkout
         uses: actions/checkout@v2
       - name: Login to Docker Hub
