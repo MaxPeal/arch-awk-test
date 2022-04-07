@@ -22,7 +22,9 @@ jobs:
 
       - name: downcase REPO
         run: |
-          echo "REPO=${GITHUB_REPOSITORY,,}" >>${GITHUB_ENV}
+          echo "REPO=$(echo \"${GITHUB_REPOSITORY}\" | tr '[A-Z]' '[a-z]')" >>${GITHUB_ENV}
+          # NOT-Work on macos-10.15, Error "bad substitution", Error: Process completed with exit code 1.
+          # echo "REPO=${GITHUB_REPOSITORY,,}" >>${GITHUB_ENV}
 
       - name: echo post REPO
         run: |
@@ -34,8 +36,11 @@ jobs:
 
       - name: downcase GITHUB_REPOSITORY
         run: |
-          echo "GITHUB_REPOSITORY=${GITHUB_REPOSITORY,,}" >>${GITHUB_ENV}
-          echo "GITHUB_REPOSITORY_LC=${GITHUB_REPOSITORY,,}" >>${GITHUB_ENV}
+          echo "GITHUB_REPOSITORY=$(echo \"${GITHUB_REPOSITORY}\" | tr '[A-Z]' '[a-z]')" >>${GITHUB_ENV}
+          echo "GITHUB_REPOSITORY_LC=$(echo \"${GITHUB_REPOSITORY}\" | tr '[A-Z]' '[a-z]')" >>${GITHUB_ENV}
+          # NOT-Work on macos-10.15, Error "bad substitution", Error: Process completed with exit code 1.
+          # echo "GITHUB_REPOSITORY=${GITHUB_REPOSITORY,,}" >>${GITHUB_ENV}
+          # echo "GITHUB_REPOSITORY_LC=${GITHUB_REPOSITORY,,}" >>${GITHUB_ENV}
 
       - name: echo post GITHUB_REPOSITORY
         run: |
