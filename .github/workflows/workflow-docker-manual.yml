@@ -6,6 +6,10 @@ on:
       tags:
         description: 'Enter tag name for test/dev image'
         default: 'test'
+      dockerfile:
+        description: 'Enter filename for build Dockerfile'
+        default: 'Dockerfile'
+        
 
 jobs:
   gcr-dockerhub-build-publish:
@@ -13,8 +17,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        operating-system: [ubuntu-16.04, ubuntu-18.04, ubuntu-20.04, ubuntu-latest, windows-2016, windows-2019, macos-10.15]
-        #operating-system: [ubuntu-16.04, ubuntu-18.04, ubuntu-20.04, ubuntu-latest, windows-2016, windows-2019, macos-10.15]
+        operating-system: [ubuntu-18.04, ubuntu-20.04, windows-2016, windows-2019, windows-2022, macos-10.15, macos-11, macos-12]
+        #operating-system: [ubuntu-16.04, ubuntu-18.04, ubuntu-20.04, ubuntu-latest, windows-2016, windows-2019, windows-2022, macos-10.15, macos-11, macos-12]
     steps:
       - name: echo pre GITHUB_REPOSITORY
         run: |
@@ -115,6 +119,7 @@ jobs:
               --tag ghcr.io/${{ steps.env_fix.outputs.repo_name_lc }}:${{ github.event.inputs.tags }} \
               --tag registry.gitlab.com/${{ steps.env_fix.outputs.repo_name_lc }}:${{ steps.generate_temporary_tag_name.outputs.test_tag }} \
               --tag registry.gitlab.com/${{ steps.env_fix.outputs.repo_name_lc }}:${{ github.event.inputs.tags }} \
+              --file ${{ github.event.inputs.dockerfile }} \
               .
       - name: Run Tests
         shell: bash
