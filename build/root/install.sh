@@ -38,7 +38,8 @@ fi
 ####
 
 # define pacman packages
-pacman_packages="git wget ffmpeg"
+#+# pacman_packages="git wget ffmpeg"
+pacman_packages="wget gawk nawk busybox"
 
 # install compiled packages using pacman
 if [[ ! -z "${pacman_packages}" ]]; then
@@ -50,13 +51,15 @@ fi
 
 # need to install this separately, as its now a requirement of
 # package 'tvheadned' which fails unless this is already installed
-aur_packages="libavresample"
+#+# #+# aur_packages="libavresample"
 
 # call aur install script (arch user repo)
-source aur.sh
+#+# #+# source aur.sh
 
 # define aur packages
-aur_packages="comskip xmltv tvheadend"
+#+# aur_packages="comskip xmltv tvheadend"
+aur_packages="mawk original-awk toybox libmawk original-awk"
+#+# bioawk bioawk-git frawk gawk-git goawk goawk-git hawk-git libmawk mawk mawk-git mawk2-git nawk-git original-awk runawk rawk
 
 # call aur install script (arch user repo)
 source aur.sh
