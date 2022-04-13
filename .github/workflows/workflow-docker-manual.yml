@@ -6,19 +6,30 @@ on:
       tags:
         description: 'Enter tag name for test/dev image'
         default: 'test'
+      dockerfile:
+        description: 'Enter filename for build Dockerfile'
+        default: 'Dockerfile'
+        
 
 jobs:
   gcr-dockerhub-build-publish:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.operating-system }}
+    strategy:
+      fail-fast: false
+      matrix:
+        operating-system: [ubuntu-18.04]
+        #operating-system: [ubuntu-18.04, ubuntu-20.04, windows-2016, windows-2019, windows-2022, macos-10.15, macos-11, macos-12]
+        #operating-system: [ubuntu-16.04, ubuntu-18.04, ubuntu-20.04, ubuntu-latest, windows-2016, windows-2019, windows-2022, macos-10.15, macos-11, macos-12]
     steps:
-
       - name: echo pre GITHUB_REPOSITORY
         run: |
           echo "GITHUB_REPOSITORY $GITHUB_REPOSITORY"
 
       - name: downcase REPO
         run: |
-          echo "REPO=${GITHUB_REPOSITORY,,}" >>${GITHUB_ENV}
+          echo "REPO=$(echo \"${GITHUB_REPOSITORY}\" | tr '[A-Z]' '[a-z]')" >>${GITHUB_ENV}
+          # NOT-Work on macos-10.15, Error "bad substitution", Error: Process completed with exit code 1.
+          # echo "REPO=${GITHUB_REPOSITORY,,}" >>${GITHUB_ENV}
 
       - name: echo post REPO
         run: |
@@ -30,7 +41,11 @@ jobs:
 
       - name: downcase GITHUB_REPOSITORY
         run: |
-          echo "GITHUB_REPOSITORY=${GITHUB_REPOSITORY,,}" >>${GITHUB_ENV}
+          echo "GITHUB_REPOSITORY=$(echo \"${GITHUB_REPOSITORY}\" | tr '[A-Z]' '[a-z]')" >>${GITHUB_ENV}
+          echo "GITHUB_REPOSITORY_LC=$(echo \"${GITHUB_REPOSITORY}\" | tr '[A-Z]' '[a-z]')" >>${GITHUB_ENV}
+          # NOT-Work on macos-10.15, Error "bad substitution", Error: Process completed with exit code 1.
+          # echo "GITHUB_REPOSITORY=${GITHUB_REPOSITORY,,}" >>${GITHUB_ENV}
+          # echo "GITHUB_REPOSITORY_LC=${GITHUB_REPOSITORY,,}" >>${GITHUB_ENV}
 
       - name: echo post GITHUB_REPOSITORY
         run: |
@@ -77,6 +92,20 @@ jobs:
           echo "[debug] Generated app name is '${app_name}'"
           echo "::set-output name=app_name::$app_name"
         id: generate_app_name
+      - name: Env Fix LowerCase GITHUB_REPOSITORY repo_name_lc
+        shell: bash
+        run: |
+          repo_name_lc=$(echo "${GITHUB_REPOSITORY}" | tr '[A-Z]' '[a-z]')
+          repo_name_uc=$(echo "${GITHUB_REPOSITORY}" | tr '[a-z]' '[A-Z]')
+          repo_name=$(echo "${GITHUB_REPOSITORY}")
+          echo "[debug] Generated repo name lc is '${repo_name_lc}'"
+          echo "[debug] Generated repo name uc is '${repo_name_uc}'"
+          echo "[debug] Generated repo name is '${repo_name}'"
+          echo "::set-output name=repo_name_lc::$repo_name_lc"
+          echo "::set-output name=repo_name_uc::$repo_name_uc"
+          echo "::set-output name=repo_name::$repo_name"
+        id: env_fix
+
       - name: Build Docker image and tag
         uses: nick-invision/retry@v2.4.0
         with:
@@ -85,12 +114,13 @@ jobs:
           retry_wait_seconds: 120
           command: |
             docker build \
-              --tag ${{ github.repository }}:${{ steps.generate_temporary_tag_name.outputs.test_tag }} \
-              --tag ${{ github.repository }}:${{ github.event.inputs.tags }} \
-              --tag ghcr.io/${{ github.repository }}:${{ steps.generate_temporary_tag_name.outputs.test_tag }} \
-              --tag ghcr.io/${{ github.repository }}:${{ github.event.inputs.tags }} \
-              --tag registry.gitlab.com/${{ github.repository }}:${{ steps.generate_temporary_tag_name.outputs.test_tag }} \
-              --tag registry.gitlab.com/${{ github.repository }}:${{ github.event.inputs.tags }} \
+              --tag ${{ steps.env_fix.outputs.repo_name_lc }}:${{ steps.generate_temporary_tag_name.outputs.test_tag }} \
+              --tag ${{ steps.env_fix.outputs.repo_name_lc }}:${{ github.event.inputs.tags }} \
+              --tag ghcr.io/${{ steps.env_fix.outputs.repo_name_lc }}:${{ steps.generate_temporary_tag_name.outputs.test_tag }} \
+              --tag ghcr.io/${{ steps.env_fix.outputs.repo_name_lc }}:${{ github.event.inputs.tags }} \
+              --tag registry.gitlab.com/${{ steps.env_fix.outputs.repo_name_lc }}:${{ steps.generate_temporary_tag_name.outputs.test_tag }} \
+              --tag registry.gitlab.com/${{ steps.env_fix.outputs.repo_name_lc }}:${{ github.event.inputs.tags }} \
+              --file ${{ github.event.inputs.dockerfile }} \
               .
       - name: Run Tests
         shell: bash
@@ -99,7 +129,7 @@ jobs:
           git_clone_scripts_repo="https://github.com/binhex/scripts.git"
 
           git clone "${git_clone_scripts_repo}" "${git_clone_scripts_dest}"
-          "${git_clone_scripts_dest}/shell/arch/docker/testrunner.sh" --app-name ${{ steps.generate_app_name.outputs.app_name }} --image-name "ghcr.io/${{ github.repository }}:${{ steps.generate_temporary_tag_name.outputs.test_tag }}"
+          "${git_clone_scripts_dest}/shell/arch/docker/testrunner.sh" --app-name ${{ steps.generate_app_name.outputs.app_name }} --image-name "ghcr.io/${{ steps.env_fix.outputs.repo_name_lc }}:${{ steps.generate_temporary_tag_name.outputs.test_tag }}"
       - name: Push Docker image to Docker Hub
         uses: nick-invision/retry@v2.4.0
         with:
@@ -107,7 +137,7 @@ jobs:
           max_attempts: 3
           retry_wait_seconds: 120
           command: |
-            docker push ${{ github.repository }}:${{ github.event.inputs.tags }}
+            docker push ${{ steps.env_fix.outputs.repo_name_lc }}:${{ github.event.inputs.tags }}
       - name: Push Docker image to GitHub Container Registry (GHCR)
         uses: nick-invision/retry@v2.4.0
         with:
@@ -115,7 +145,7 @@ jobs:
           max_attempts: 3
           retry_wait_seconds: 120
           command: |
-            docker push ghcr.io/${{ github.repository }}:${{ github.event.inputs.tags }}
+            docker push ghcr.io/${{ steps.env_fix.outputs.repo_name_lc }}:${{ github.event.inputs.tags }}
       - name: Push Docker image to GitLab Container Registry (GCR)
         uses: nick-invision/retry@v2.4.0
         with:
@@ -123,4 +153,4 @@ jobs:
           max_attempts: 3
           retry_wait_seconds: 120
           command: |
-            docker push registry.gitlab.com/${{ github.repository }}:${{ github.event.inputs.tags }}
+            docker push registry.gitlab.com/${{ steps.env_fix.outputs.repo_name_lc }}:${{ github.event.inputs.tags }}
